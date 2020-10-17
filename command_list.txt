@@ -112,11 +112,6 @@ kubectl port-forward <resource_kind>/<resource_name> [<host_port>:]<guest_port>
                                                                           # <guest_port> is Pod/Deployment/Service's port, and <host_port> is port on local machine which
                                                                           # if not specified is assumed to be same as <guest_port>
 
-# Running command from local script (where the client resides) in a container
-# the script might contain something such as:
-# /bin/zsh --login -i -c 'KEYCHAIN_ENABLED=False && env'
-cat path/to/local/script | kubectl exec -it <pod_name> -c <container_name> -- /bin/bash -
-
 # Attach to a running container
 kubectl attach <my_pod> -i                                                # yet to explore
 
