@@ -1,0 +1,135 @@
+# kubectl config
+kubectl config --help
+kubectl config get-contexts
+kubectl config use-context <context_name>
+kubectl config current-context
+
+# Major heading of kubernetes configuration file's are:
+# - `apiVersion`
+# - `kind`
+# - `preferences`
+# - `clusters`
+# - `contexts`
+# - `current-context`
+# - `users`
+
+# Getting help
+kubectl --help
+kubectl <command> --help
+
+# Getting to know about cluster and nodes
+kubectl config view                                                       # show merged kubeconfig settings
+kubectl config get-clusters                                               # list of all clusters
+kubectl config get-contexts                                               # list of all contexts
+kubectl config current-context                                            # current cluster
+kubectl cluster-info                                                      # display addresses of master and services
+
+kubectl get ns                                                            # (or use `namespace` instead of `ns`) list all the current namespaces in the cluster
+kubectl get node -o wide --show-kind                                      # list all nodes in the cluster (nodes are not listed with `get all` command) with descriptive name (containing `kind`)
+kubectl describe node <node_name>                                         # describes a particular node
+kubectl top node <node_name>                                              # show matrics for a given node (requires `metrics-server`)
+kubectl get pv                                                            # list all persistence volumes
+
+# Getting to know about long and short names of K8s resources
+kubectl api-resources                                                     # list of all namespaced and non-namespaced resources
+kubectl api-resources --namespaced=false -o wide                          # list of resource which are not namespaced
+kubectl api-resources --namespaced=true -o wide                           # list of resource which are namespaced
+kubectl api-resources --namespaced=true --verbs=list -o name              # names of namespaced resources which support `list` verb
+kubectl api-resources --namespaced=true --verbs=list -o name \
+  | xargs -n 1 kubectl get --show-kind                                    # getting info about all of the namespaced object kinds one by one
+
+# Useful Flags
+# short form for flag: `-o wide`, long form for flag: `--output=wide`
+# although `=` can be appended or eliminated to both the forms `-f` and `--flag`
+-o <format> (or --output=<format>)                                        # `<format>` can be `json` (useful to understand hierarchy within document), `yaml`, `jsonpath` (useful for querying), `wide`, `name`, `custom-columns`
+--show-kind                                                               # descriptive names containing kind (similar to how names are listed by `get all`)
+--show-labels                                                             # shows labels
+-n <my_namespace> (or --namespace=<my_namespace>)                         # look into `<my_namespace>` rather than `default` namespace
+--all-namespaces                                                          # get resources from not just current namespace, but from all namespaces
+-l <label_selector>   (or --selector=<label_selector>)                    # specify `<label_selector>` to filter resources with given labels, check `kubectl get --help | grep selector` for details
+--field-selector=<field_selctor>                                          # specify `<field_selector>` to filter resources with given fields, check `kubectl get --help | grep selector` for details
+-w (or --watch)                                                           # allows you to watch for changes for given resource type
+
+# Getting to know about variable kubernetes objects
+kubectl get all -o wide -n <namespace>                                    # list all resources with different kinds
+kubectl get <r_kind_1>,<r_kind_2>,<r_kind_3>                              # list of resources for specified multiple resource kinds
+
+kubectl get <resource_kind> -n <namespace>                                # list resource of particular kind from withing a given namespace
+kubectl get <resource_kind> <resource_name> -o json                       # describe a resource of kind `<resource_kind>` and name `<resource_name>` in JSON/YAML format
+                                                                          # the output is similar to how it appears in `kubectl edit`
+kubectl get <resource_name_with_kind> -o json                             # describe a given with descriptive name such as `service/kubernetes` in JSON/YAML format
+kubectl get <kind> <name> -o jsonpath='{path_starting_with_dot}'          # parses `kubectl get` output; to know the path first use `-o json` flag
+
+kubectl get pod -o wide -n <namespace>                                    # most common command to see what all applications are running
+kubectl top pod POD_NAME --containers -n <namespace>                      # show metrics for a given pod and its containers (requires `metrics-server`)
+kubectl get secret -n <namespace>                                         # secrets are not listed with `get all` command
+kubectl get endpoints -n <namespace>                                      # endpoints are not listed with `get all` command
+                                                                          # for example: `kubectl get service my-nginx -o jsonpath='{.spec.clusterIP}'`
+kubectl get pvc -n <namespace>                                            # list all persistence volume claims from a given namespace
+kubectl get service -n <namespace>
+kubectl get ingress -n <namespace>
+
+kubectl get ingress,pod,service,endpoints,pvc,secret -o wide -n <namespace>
+
+# Dry run the changes in manifest with server-side request without persisting the resource
+# and perform validation on the manifest (which is is true by default)
+kubectl apply -f <resource_spec_file> -n <namespace> --dry-run=server --validate=true
+
+# Creating, and Updation
+# note: to use 'apply', always create the resource initially with either `apply` or `create --save-config`
+# the `--save-config` with `create` (but, by default with `apply`) causes the resource configuration settings to be saved in the annotations, having this allow in-place
+# changes to be made to a resource in future using `kubectl apply`
+kubectl apply -f <resource_spec_file> -n <namespace>                      # applying the changes (or creating if the object wasn't already present)
+                                                                          # it automatically saves the configuration the object (to which apply is called) to its annotation
+                                                                          # named `kubectl.kubernetes.io/last-applied-configuration`
+                                                                          # note that if apply is called on a Deployment, then changes will be saved to deployment, and not
+                                                                          # to its underneath Pods
+
+# Exposing as K8s service
+kubectl expose <resource_kind> -f <resource_spec_file> -n <namespace>     # exposes a resource as a new K8s service
+
+# Deleting Resources
+kubectl delete -f <resource_spec_file> -n <namespace>
+kubectl delete <resource_kind> <resource_name> -n <namespace>
+kubectl delete <resource_kind> -l <label_name>=<label_value> -n <namespace>
+
+# Editing and patching
+kubectl edit <resource_kind> <resource_name> -o json                      # great for inspecting JSON manifest of a resource within Vim and editing if required
+kubectl patch <resource_kind> <resource_name> -p <patch>                  # update field(s) of a resource using strategic merge patch, a JSON merge patch, or a JSON patch
+
+# Imperative command to run a pod
+kubectl run <pod_name> --image=<image_name>                               # create and run a particular image, possibly replicated.
+                                                                          # creates a deployment or job to manage the created container(s).
+                                                                          # check `--help` for other details
+
+# Getting into the container
+kubectl exec -it <pod_name> -c <container_name> -- /bin/bash              # need not to use `-c <container_name>` if there is only one container in the pod
+kubectl exec -it <pod_name> -c <container_name> -n <namespace> -- /bin/bash
+kubectl exec -it <pod_name> -c <container_name> -- /bin/bash -c [ARGS...]
+
+# Port-Forwarding from Pod/Deployment/Service to local machine
+kubectl port-forward <resource_kind>/<resource_name> [<host_port>:]<guest_port>
+                                                                          # <guest_port> is Pod/Deployment/Service's port, and <host_port> is port on local machine which
+                                                                          # if not specified is assumed to be same as <guest_port>
+
+# Running command from local script (where the client resides) in a container
+# the script might contain something such as:
+# /bin/zsh --login -i -c 'KEYCHAIN_ENABLED=False && env'
+cat path/to/local/script | kubectl exec -it <pod_name> -c <container_name> -- /bin/bash -
+
+# Attach to a running container
+kubectl attach <my_pod> -i                                                # yet to explore
+
+# Troubleshooting
+kubectl get event -n <namespace>                                          # get kubernetes events for given namespace (use it for troubleshooting at kubernetes scheduling level)
+                                                                          # but note that it shows you only recent events
+kubectl describe <resource_kind> <resource_name> -n <namespace>           # describe (with info like events) a resource of kind `<resource_kind>` and name `<resource_name>`
+kubectl describe <resource_name_with_kind> -n <namespace>                 # describe (with info like events) a given with descriptive name such as `service/kubernetes`
+kubectl logs -f --timestamps <pod_name> -n <namespace>                    # get logs (with timestamps) for a given pod, and following (starting from beginning by default)
+kubectl logs -f --since=3600s <pod_name>                                  # get logs since given duration
+kubectl logs -f --since-time=2018-03-17T08:55:02 <pod_name>               # get logs since given start time
+kubectl logs <pod_name> -c <container_nam>                                # get logs for a particular container of a pod (use if there are multiple containers)
+kubectl logs -f <pod_name> --all-containers=true                          # get logs for all containers of a pod
+kubectl logs -f -l <selector>                                             # get logs for all pods matching given <selector>
+kubectl logs -f -l <selector> --all-containers=true                       # get logs for all pods (along with their all containers) matching given <selector>
+kubectl logs <pod_name> -c <container_nam> -p                             # (`--previous`) get logs for for the previous instance of the container in a pod if it exists
