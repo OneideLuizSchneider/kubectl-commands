@@ -24,7 +24,7 @@ kubectl config get-contexts                                               # list
 kubectl config current-context                                            # current cluster
 kubectl cluster-info                                                      # display addresses of master and services
 
-kubectl get ns                                                            # (or use `namespace` instead of `ns`) list all the current namespaces in the cluster
+kubectl get ns                                                            # (or use `namespace` `namespaces` instead of `ns`) list all the current namespaces in the cluster
 kubectl get node -o wide --show-kind                                      # list all nodes in the cluster (nodes are not listed with `get all` command) with descriptive name (containing `kind`)
 kubectl describe node <node_name>                                         # describes a particular node
 kubectl top node <node_name>                                              # show matrics for a given node (requires `metrics-server`)
